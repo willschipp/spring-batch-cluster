@@ -6,6 +6,12 @@ import java.util.List;
 
 import de.incompleteco.spring.heartbeat.HeartBeatClientService;
 
+/**
+ * client service to that both registers and publishes 
+ * this JVM's jobExecutionId list (for 'running' jobs)
+ * @author wschipp
+ *
+ */
 public class BatchHeartBeatClientService implements HeartBeatClientService, BatchExecutionRegister {
 
 	private List<Long> jobExecutionIds;

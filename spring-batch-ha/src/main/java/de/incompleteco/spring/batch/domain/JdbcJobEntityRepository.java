@@ -12,6 +12,11 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
+/**
+ * JDBC implementation of the JobEntityRepository
+ * @author wschipp
+ *
+ */
 @Repository
 public class JdbcJobEntityRepository implements JobEntityRepository, InitializingBean  {
 
@@ -33,7 +38,7 @@ public class JdbcJobEntityRepository implements JobEntityRepository, Initializin
 	@Override
 	public List<JobEntity> findAll() {
 		//return
-		return jdbcTemplate.query(FIND_ALL_SQL, new JobEntityRowMapper(),JobEntity.class);
+		return jdbcTemplate.query(FIND_ALL_SQL, new JobEntityRowMapper());
 	}
 
 	@Override

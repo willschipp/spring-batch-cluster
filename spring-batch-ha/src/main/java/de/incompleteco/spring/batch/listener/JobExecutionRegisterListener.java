@@ -6,6 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import de.incompleteco.spring.heartbeat.batch.BatchExecutionRegister;
 
+/**
+ * simple listener to register a job execution id
+ * @author wschipp
+ *
+ */
 public class JobExecutionRegisterListener implements JobExecutionListener {
 
 	@Autowired

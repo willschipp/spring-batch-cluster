@@ -4,6 +4,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.Job;
@@ -23,8 +25,15 @@ import org.springframework.beans.factory.annotation.Qualifier;
 
 import de.incompleteco.spring.heartbeat.batch.BatchExecutionState;
 
+/**
+ * simple HA implementation
+ * @author wschipp
+ *
+ */
 public class SimpleBatchHAService implements BatchHAService {
 
+	private static final Logger logger = LoggerFactory.getLogger(SimpleBatchHAService.class);
+	
 	private long timeout = 4 * 1000;//timeout is by default, double what the executionstate is
 	
 	@Autowired
@@ -49,8 +58,6 @@ public class SimpleBatchHAService implements BatchHAService {
 		//these ids represent job executions that were registered on a jvm and the jvm hasn't responded 
 		//inside the timeout
 		List<Long> executionIds = batchExecutionState.getUnknownJobExecutionIds();
-		//got ids
-		System.out.println("got ids: "  + executionIds);
 		//loop through the ids
 		for (Long executionId : executionIds) {
 			//init
@@ -59,20 +66,20 @@ public class SimpleBatchHAService implements BatchHAService {
 			//check if it's listed as stopped/not running in the database (state has changed since the heartbeat)
 			JobExecution execution = jobExplorer.getJobExecution(executionId);
 			if (execution.isRunning()) {
-				System.out.println(executionId + " is still running");
+				logger.debug("Execution is still running",executionId);
 				//it's still "running" - so we have a potential failure --> check when last updated
 				if (execution.getLastUpdated().before(calendar.getTime())) {
 					//so now we know it REALLY hasn't been looked at in awhile --> send for 'processing
 					processFailedJob(execution);
-				} else {
-					System.out.println("not waiting long enough " + execution.getLastUpdated() + " " + calendar.getTime());
+					//restart
+					restart(execution);
 				}//end if
 			}//end if
 		}//end for
 	}
 
 	protected void processFailedJob(JobExecution jobExecution) {
-		System.out.println("processing a failed job");
+		logger.debug("processing a failed job",jobExecution);
 		//init
 		Date updateTime = new Date();
 		//this execution is 'dead' --> need to update it and restart it
@@ -82,12 +89,10 @@ public class SimpleBatchHAService implements BatchHAService {
 		jobExecution.setEndTime(updateTime);
 		//save in the repo
 		jobRepository.update(jobExecution);
-		//now invoke the restart
-		restart(jobExecution);
 	}
 	
 	protected void restart(JobExecution jobExecution) {
-		System.out.println("restarting...");
+		logger.debug("restarting...",jobExecution);
 		//retrieve the job
 		String jobName = jobExecution.getJobInstance().getJobName();
 		Job job;

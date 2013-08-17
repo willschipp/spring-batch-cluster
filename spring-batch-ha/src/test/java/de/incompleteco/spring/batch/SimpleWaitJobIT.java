@@ -16,10 +16,12 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+@DirtiesContext
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration({"classpath:/META-INF/spring/batch-resource-context.xml",
 	"classpath:/META-INF/spring/job-context.xml"})

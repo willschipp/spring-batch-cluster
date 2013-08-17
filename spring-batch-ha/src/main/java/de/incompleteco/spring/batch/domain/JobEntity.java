@@ -2,6 +2,12 @@ package de.incompleteco.spring.batch.domain;
 
 import java.io.Serializable;
 
+/**
+ * simple object to record a job name with a version
+ * 
+ * @author wschipp
+ *
+ */
 public class JobEntity implements Serializable {
 
 	private static final long serialVersionUID = 1L;

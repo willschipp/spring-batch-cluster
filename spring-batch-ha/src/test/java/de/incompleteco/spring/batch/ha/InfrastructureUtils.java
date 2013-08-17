@@ -13,10 +13,14 @@ import org.apache.activemq.spring.ActiveMQConnectionFactory;
 import org.h2.jdbcx.JdbcConnectionPool;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.tools.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mock.jndi.SimpleNamingContextBuilder;
 
 public class InfrastructureUtils {
 
+	private static final Logger logger = LoggerFactory.getLogger(InfrastructureUtils.class);
+	
 	private static Server server;
 	
 	private static BrokerService broker;
@@ -25,7 +29,7 @@ public class InfrastructureUtils {
 		if (server == null) {
 			server = Server.createTcpServer("-tcpAllowOthers");
 			server.start();
-			System.out.println(server.getStatus());
+			logger.info(server.getStatus());
 		}//end if
 	}	
 	
@@ -52,34 +56,30 @@ public class InfrastructureUtils {
 		}//end if
 	}	
 	
-	public static void bindLocalAMQ() {
+	public static void bindLocalAMQ(String connectionFactoryName,String... queueNames) {
 		//get jndi
 		SimpleNamingContextBuilder builder = SimpleNamingContextBuilder.getCurrentContextBuilder();
 		//get the connection
 		ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory();
 		connectionFactory.setBrokerURL("tcp://localhost:61616");
 		//bind
-		builder.bind("jms/ConnectionFactory",connectionFactory);
+		builder.bind("jms/" + connectionFactoryName,connectionFactory);
 		//setup the queues
-		ActiveMQQueue requestQueue = new ActiveMQQueue("batch.request.queue");
-		//bind
-		builder.bind("jms/batch.request.queue",requestQueue);
-		//next
-		ActiveMQQueue replyQueue = new ActiveMQQueue("batch.reply.queue");
-		//bind
-		builder.bind("jms/batch.reply.queue",replyQueue);		
+		for (String name : queueNames) {
+			builder.bind("jms/" + name,new ActiveMQQueue(name));			
+		}//end for
 	}	
 	
-	public static DataSource bindLocalH2() throws Exception {
+	public static DataSource bindLocalH2(String dataSourceName) throws Exception {
 		JdbcDataSource dataSource = new JdbcDataSource();
 		dataSource.setURL("jdbc:h2:tcp://localhost/~/test");
 		//build a pool and bind
 		JdbcConnectionPool pool = JdbcConnectionPool.create(dataSource);
 		SimpleNamingContextBuilder builder = SimpleNamingContextBuilder.getCurrentContextBuilder();
-		builder.bind("jdbc/DataSource", pool);
+		builder.bind("jdbc/" + dataSourceName, pool);
 		//return it in case there's other uses
 		return dataSource;
-	}
+	}	
 	
 	public static String[] convertSqlFile(String location) throws Exception {
 		List<String> sqlStatements = new ArrayList<String>();

@@ -11,12 +11,14 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import de.incompleteco.spring.batch.step.WaitingTask;
 
+@DirtiesContext
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration({"classpath:/META-INF/spring/client/*-context.xml",
 	"classpath:/META-INF/spring/server/*-context.xml",

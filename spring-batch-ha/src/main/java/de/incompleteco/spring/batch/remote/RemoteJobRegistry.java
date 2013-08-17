@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.configuration.DuplicateJobException;
 import org.springframework.batch.core.configuration.JobFactory;
@@ -17,10 +19,12 @@ import de.incompleteco.spring.batch.domain.JobEntityRepository;
 
 /**
  * implementation to support remote jobs
- * @author incomplete-co.de
+ * @author wschipp
  *
  */
 public class RemoteJobRegistry implements JobRegistry {
+	
+	private static final Logger logger = LoggerFactory.getLogger(RemoteJobRegistry.class);
 
 	@Autowired
 	private JobEntityRepository jobEntityRepository;
@@ -33,6 +37,7 @@ public class RemoteJobRegistry implements JobRegistry {
 	
 	@Override
 	public Collection<String> getJobNames() {
+		logger.debug("retrieving jobnames");
 		Collection<String> names = new ArrayList<String>();
 		List<JobEntity> entities = jobEntityRepository.findAll();
 		for (JobEntity entity : entities) {
@@ -50,7 +55,7 @@ public class RemoteJobRegistry implements JobRegistry {
 		}//end if
 		//check if the name exists
 		if (jobEntityRepository.findByName(name) == null) {
-			throw new NoSuchJobException("job doesn't exist");
+			throw new NoSuchJobException("job doesn't exist " + name);
 		}//end if
 		//build a 'fake' job
 		Job job = new SimpleJob(name);
@@ -77,6 +82,5 @@ public class RemoteJobRegistry implements JobRegistry {
 		//remove locally
 		localJobRegistry.unregister(jobName);
 	}
-	
 
 }

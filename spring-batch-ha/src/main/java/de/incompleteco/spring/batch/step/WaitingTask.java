@@ -11,6 +11,11 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 
+/**
+ * dumb testing tasklet
+ * @author wschipp
+ *
+ */
 public class WaitingTask implements Tasklet {
 
 	private boolean wait = false;

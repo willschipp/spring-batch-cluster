@@ -16,6 +16,7 @@ import org.apache.tools.ant.taskdefs.Java;
 import org.apache.tools.ant.types.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
@@ -29,6 +30,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.jndi.SimpleNamingContextBuilder;
 
 //don't run this test in CI
+//@Ignore
 public class TestScenariosSimpleBatchHAService {
 
 	
@@ -39,12 +41,12 @@ public class TestScenariosSimpleBatchHAService {
 		//setup the services (h2 and amq)
 		InfrastructureUtils.startH2();
 		//setup the database
-		DataSource dataSource = InfrastructureUtils.bindLocalH2();
+		DataSource dataSource = InfrastructureUtils.bindLocalH2("DataSource");
 		setupH2Data(dataSource);
 		//start amq
 		InfrastructureUtils.startAMQ();
 		//bind
-		InfrastructureUtils.bindLocalAMQ();
+		InfrastructureUtils.bindLocalAMQ("ConnectionFactory","batch.request.queue","batch.reply.queue");
 	}
 	
 	@AfterClass

@@ -1,13 +1,22 @@
 package de.incompleteco.spring.batch.listener;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.job.AbstractJob;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
+/**
+ * post processor to add the listener to jobs
+ * @author wschipp
+ *
+ */
 public class JobExecutionRegisterPostProcessor implements BeanPostProcessor, ApplicationContextAware  {
 
+	private static final Logger logger = LoggerFactory.getLogger(JobExecutionRegisterPostProcessor.class);
+	
 	private ApplicationContext applicationContext;
 	
 	private JobExecutionRegisterListener listener;
@@ -26,6 +35,7 @@ public class JobExecutionRegisterPostProcessor implements BeanPostProcessor, App
 				init();
 			}//end if
 			//attach the listener
+			logger.debug("adding listener");
 			((AbstractJob)bean).registerJobExecutionListener(listener);
 		}//end if
 		return bean;

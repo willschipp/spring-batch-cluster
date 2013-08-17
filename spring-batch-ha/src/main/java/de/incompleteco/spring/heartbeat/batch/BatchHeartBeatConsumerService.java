@@ -8,10 +8,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.incompleteco.spring.heartbeat.HeartBeatConsumerService;
 
+/**
+ * implementation of the service
+ * @author wschipp
+ *
+ */
 public class BatchHeartBeatConsumerService implements HeartBeatConsumerService,BatchExecutionState {
 
+	private static final Logger logger = LoggerFactory.getLogger(BatchHeartBeatConsumerService.class);
+	
 	private Map<String,NodeRegister> nodeRegisters;
 	
 	private long timeout = 2 * 1000;//default is 2 seconds
@@ -29,13 +39,9 @@ public class BatchHeartBeatConsumerService implements HeartBeatConsumerService,B
 		//go through the nodes that are "timedout"
 		for (NodeRegister register : nodeRegisters.values()) {
 			if (register.getTimestamp().before(calendar.getTime())) {
-				System.out.println("it's been too long " + register.getTimestamp() + " " + register.getJobExecutionIds());
+				logger.debug("it's been too long " + register.getTimestamp() + " " + register.getJobExecutionIds());
 				//it's been too long
 				jobExecutionIds.addAll(register.getJobExecutionIds());
-				System.out.println(jobExecutionIds);
-			} else {
-				//not long enough
-				System.out.println("not long enough: " + register.getTimestamp() + " " + calendar.getTime());
 			}//end if
 		}//end for
 		//if there are any, return
@@ -48,7 +54,7 @@ public class BatchHeartBeatConsumerService implements HeartBeatConsumerService,B
 		if (!(message instanceof List)) {
 			throw new IllegalArgumentException("payload is incorrect " + message);
 		}//end if
-		System.out.println("received this: " + clientId + " " + ((List<?>)message));
+		logger.debug("received this: ",clientId,((List<?>)message));
 		//init
 		NodeRegister register;
 		//register
@@ -69,6 +75,11 @@ public class BatchHeartBeatConsumerService implements HeartBeatConsumerService,B
 	}
 
 
+	/**
+	 * placeholder class
+	 * @author wschipp
+	 *
+	 */
 	class NodeRegister {
 		
 		private List<Long> jobExecutionIds;

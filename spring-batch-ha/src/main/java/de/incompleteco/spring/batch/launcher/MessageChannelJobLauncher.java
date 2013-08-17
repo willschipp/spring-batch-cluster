@@ -1,5 +1,7 @@
 package de.incompleteco.spring.batch.launcher;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionException;
@@ -14,7 +16,16 @@ import org.springframework.integration.core.MessagingOperations;
 import org.springframework.integration.core.PollableChannel;
 import org.springframework.integration.support.MessageBuilder;
 
+import de.incompleteco.spring.batch.ha.SimpleBatchHAService;
+
+/**
+ * message channel implementation of jobLauncher
+ * @author wschipp
+ *
+ */
 public class MessageChannelJobLauncher implements JobLauncher {
+	
+	private static final Logger logger = LoggerFactory.getLogger(SimpleBatchHAService.class);
 
 	private MessagingOperations gateway;
 	
@@ -28,26 +39,34 @@ public class MessageChannelJobLauncher implements JobLauncher {
 		//build
 		Message<?> request = MessageBuilder.withPayload(jobParameters).setHeader("jobName", job.getName()).build();
 		//send
+		logger.debug("sending start job for",job);
 		gateway.send(request);
 		//await response
 		Message<?> reply = replyChannel.receive(timeout);
+		logger.debug("after receiving timeout",reply);
 		//convert
 		if (reply.getPayload() instanceof JobExecution) {
 			return (JobExecution) reply.getPayload();
 		} else if (reply.getPayload() instanceof JobExecutionException) {
 			//check, cast and throw
 			if (reply.getPayload() instanceof JobExecutionAlreadyRunningException) {
+				logger.error("exception thrown", reply.getPayload());
 				throw (JobExecutionAlreadyRunningException) reply.getPayload();
 			} else if (reply.getPayload() instanceof JobRestartException) {
+				logger.error("exception thrown", reply.getPayload());
 				throw (JobRestartException) reply.getPayload();
 			} else if (reply.getPayload() instanceof JobInstanceAlreadyCompleteException) {
+				logger.error("exception thrown", reply.getPayload());
 				throw (JobInstanceAlreadyCompleteException) reply.getPayload();
 			} else if (reply.getPayload() instanceof JobParametersInvalidException) {
+				logger.error("exception thrown", reply.getPayload());
 				throw (JobParametersInvalidException) reply.getPayload();
 			} else {
+				logger.error("exception thrown", reply.getPayload());
 				throw new IllegalArgumentException((JobExecutionException) reply.getPayload());
 			}//end if
 		} else {
+			logger.error("exception thrown", reply.getPayload());
 			throw new IllegalArgumentException(reply.getPayload().toString());
 		}//end if
 	}
