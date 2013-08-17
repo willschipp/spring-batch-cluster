@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xsi:schemaLocation="http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<jee:jndi-lookup id="connectionFactory" jndi-name="jms/ConnectionFactory" expected-type="javax.jms.ConnectionFactory"/>
+	
+	<jee:jndi-lookup id="batch.reply.queue" jndi-name="jms/batch.reply.queue" expected-type="javax.jms.Queue"/>
+	
+	<jee:jndi-lookup id="batch.request.queue" jndi-name="jms/batch.request.queue" expected-type="javax.jms.Queue"/>
+
+	<beans profile="local">
+	
+		<bean id="connectionFactory"
+			class="org.apache.activemq.ActiveMQConnectionFactory">
+			<property name="brokerURL" value="vm://locahost?broker.useJmx=false&amp;broker.deleteAllMessagesOnStartup=true"/>
+		</bean>
+		<bean id="batch.request.queue"
+			class="org.apache.activemq.command.ActiveMQQueue">
+			<constructor-arg value="batch.request.queue"/>
+		</bean>
+		<bean id="batch.reply.queue"
+			class="org.apache.activemq.command.ActiveMQQueue">
+			<constructor-arg value="batch.reply.queue"/>
+		</bean>		
+		
+	</beans>
+	
+</beans>

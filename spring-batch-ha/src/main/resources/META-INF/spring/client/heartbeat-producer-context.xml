@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:int-jmx="http://www.springframework.org/schema/integration/jmx"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/jmx http://www.springframework.org/schema/integration/jmx/spring-integration-jmx.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<context:property-placeholder location="classpath:/META-INF/heartbeat.properties" ignore-resource-not-found="true"
+		properties-ref="default.heartbeat.properties"/>
+
+	<context:annotation-config/>
+	
+	<aop:config>
+		<aop:advisor advice-ref="registerPublish" pointcut="bean(heartbeatClientService)"/>
+	</aop:config>
+
+	<int:publishing-interceptor id="registerPublish">
+		<int:method pattern="registerExecution" payload="'addEvent'" channel="internal.trigger.channel"/>
+	</int:publishing-interceptor>
+
+	<int:channel id="internal.trigger.channel"/>
+	
+	<int:service-activator input-channel="internal.trigger.channel" 
+		output-channel="heartbeat.out.channel"
+		expression="@heartbeatClientService.getIds()"/>
+
+	<int:inbound-channel-adapter id="heartbeatAdapter" channel="heartbeat.out.channel"
+		ref="heartbeatClientService" method="getIds">
+		<int:poller fixed-rate="500" task-executor="heartbeatClient"/>
+	</int:inbound-channel-adapter>
+
+	<int:channel id="heartbeat.out.channel"/>
+	
+	<int:chain input-channel="heartbeat.out.channel">
+		<int:payload-serializing-transformer/>
+		<int-ip:tcp-outbound-channel-adapter connection-factory="heartbeatConnect"/>
+	</int:chain>
+
+	<int-ip:tcp-connection-factory id="heartbeatConnect"
+		host="${heartbeat.host}"
+		port="${heartbeat.port}"
+		type="client"/>
+
+	<task:executor id="heartbeatClient"/>
+	
+	<!-- default properties -->
+	<util:properties id="default.heartbeat.properties">
+		<prop key="heartbeat.host">localhost</prop>
+		<prop key="heartbeat.port">60101</prop>
+	</util:properties>
+	
+	<!-- batch heartbeat -->
+	<bean id="heartbeatClientService" class="de.incompleteco.spring.heartbeat.batch.BatchHeartBeatClientService"/>
+	
+	<bean class="de.incompleteco.spring.batch.listener.JobExecutionRegisterListener"/>
+	
+	<bean class="de.incompleteco.spring.batch.listener.JobExecutionRegisterPostProcessor"/>
+
+</beans>

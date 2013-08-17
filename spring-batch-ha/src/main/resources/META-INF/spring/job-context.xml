@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:batch="http://www.springframework.org/schema/batch"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+	<batch:job id="simpleWaitJob">
+		<batch:step id="simpleWaitJob.step1">
+			<batch:tasklet ref="waitTasklet"/>
+		</batch:step>
+	</batch:job>
+
+<!-- 	<bean id="waitTasklet" class="org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter"> -->
+<!-- 		<property name="targetObject" ref="waitTask"/> -->
+<!-- 		<property name="targetMethod" value="invoke"/> -->
+<!-- 	</bean> -->
+
+	<bean id="waitTasklet" class="de.incompleteco.spring.batch.step.WaitingTask"/>
+
+</beans>

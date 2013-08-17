@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<context:property-placeholder location="classpath:/META-INF/heartbeat.properties" ignore-resource-not-found="true"
+		properties-ref="default.heartbeat.properties"/>
+
+	<int-ip:tcp-inbound-channel-adapter channel="heartbeat.received.channel"
+		connection-factory="heartbeatServer"/>
+
+	<int:channel id="heartbeat.received.channel"/>
+	
+	<int:chain input-channel="heartbeat.received.channel">
+		<int:payload-deserializing-transformer/>
+		<int:service-activator expression="@heartbeatConsumerService.registerHeartbeat(headers['#{T(org.springframework.integration.ip.IpHeaders).CONNECTION_ID}'],payload)"/>
+	</int:chain>
+
+	<int-ip:tcp-connection-factory id="heartbeatServer"
+		host="${heartbeat.host}"
+		port="${heartbeat.port}"
+		type="server"/>
+
+	<!-- default properties -->
+	<util:properties id="default.heartbeat.properties">
+		<prop key="heartbeat.host">localhost</prop>
+		<prop key="heartbeat.port">60101</prop>
+	</util:properties>
+
+	<bean id="heartbeatConsumerService" class="de.incompleteco.spring.heartbeat.batch.BatchHeartBeatConsumerService"/>
+
+</beans>

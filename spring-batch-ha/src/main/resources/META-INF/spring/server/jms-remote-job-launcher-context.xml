@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="gateway" class="org.springframework.integration.core.MessagingTemplate">
+		<property name="defaultChannel" ref="job.start.out.channel"/>
+	</bean>
+
+	<int:channel id="job.start.out.channel"/>
+	
+	<int:payload-serializing-transformer
+		input-channel="job.start.out.channel" output-channel="job.start.request.channel"/>
+	
+	<int:channel id="job.start.request.channel"/>
+	
+	<int-jms:outbound-gateway 
+		reply-channel="job.start.reply.channel"
+		connection-factory="connectionFactory"
+		request-destination="batch.request.queue"
+		request-channel="job.start.request.channel"
+		reply-destination="batch.reply.queue"/>	
+	
+	<int:channel id="job.start.reply.channel"/>
+	
+	<int:payload-deserializing-transformer
+		input-channel="job.start.reply.channel" output-channel="job.start.in.channel"/>
+	
+	<int:channel id="job.start.in.channel">
+		<int:queue/>
+	</int:channel>
+
+	<bean id="remoteJobLauncher" class="de.incompleteco.spring.batch.launcher.MessageChannelJobLauncher">
+		<property name="gateway" ref="gateway"/>
+		<property name="replyChannel" ref="job.start.in.channel"/>
+	</bean>
+
+</beans>

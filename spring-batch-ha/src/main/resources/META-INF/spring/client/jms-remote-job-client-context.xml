@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<int-jms:inbound-gateway 
+		request-channel="start.request.channel"
+		reply-channel="start.reply.channel"
+		connection-factory="connectionFactory"
+		request-destination="batch.request.queue"
+		default-reply-destination="batch.reply.queue"
+		error-channel="start.request.error.channel"/>
+
+	<int:channel id="start.request.error.channel"/>
+	
+	<int:chain input-channel="start.request.error.channel" output-channel="start.reply.channel">
+		<int:transformer expression="payload.getCause()"/>
+		<int:payload-serializing-transformer/>
+	</int:chain>
+
+	<int:channel id="start.request.channel"/>
+
+	<int:chain input-channel="start.request.channel"
+		output-channel="start.reply.channel">
+		<int:payload-deserializing-transformer/>
+		<int:header-enricher>
+			<int:header name="job" expression="@localJobRegistry.getJob(headers['jobName'])"/>
+		</int:header-enricher>
+		<int:service-activator expression="@jobLauncher.run(headers['job'],payload)"/>
+		<int:payload-serializing-transformer/>
+	</int:chain>	
+	
+	<int:channel id="start.reply.channel"/>
+
+</beans>
