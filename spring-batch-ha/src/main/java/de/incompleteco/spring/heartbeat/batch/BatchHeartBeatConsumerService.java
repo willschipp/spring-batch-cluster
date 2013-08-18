@@ -74,6 +74,10 @@ public class BatchHeartBeatConsumerService implements HeartBeatConsumerService,B
 		this.timeout = timeout;
 	}
 
+	@Override
+	public boolean started() {
+		return nodeRegisters.isEmpty() ? Boolean.FALSE : Boolean.TRUE;
+	}	
 
 	/**
 	 * placeholder class

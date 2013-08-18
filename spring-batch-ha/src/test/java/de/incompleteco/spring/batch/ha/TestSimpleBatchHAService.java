@@ -26,6 +26,8 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.jndi.SimpleNamingContextBuilder;
 
+import de.incompleteco.spring.heartbeat.HeartBeatConsumerService;
+
 //don't run this test in CI
 //@Ignore
 public class TestSimpleBatchHAService {
@@ -91,8 +93,12 @@ public class TestSimpleBatchHAService {
 		//need to check if the remote server is up -- how?
 		//now start the 'server'
 		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:/META-INF/spring/server-context.xml");
+		//check that it's started
+		HeartBeatConsumerService heartBeatConsumerService  = context.getBean(HeartBeatConsumerService.class);
+		while (!heartBeatConsumerService.started()) {
+			Thread.sleep(1000);//wait 1 second for everything to start up
+		}//end if
 		//now that it's started, run the job
-//		Job job = context.getBean(Job.class);
 		JobRegistry jobRegistry = context.getBean("remoteJobRegistry",JobRegistry.class);
 		Job job = jobRegistry.getJob("simpleWaitJob");
 		JobParameters parameters = new JobParametersBuilder().addLong("runtime",System.currentTimeMillis()).toJobParameters();

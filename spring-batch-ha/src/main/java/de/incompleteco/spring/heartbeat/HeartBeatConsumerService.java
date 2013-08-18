@@ -11,4 +11,7 @@ public interface HeartBeatConsumerService {
 
 	public void registerHeartbeat(String clientId,Object message);
 	
+	//heartbeats received
+	public boolean started();
+	
 }
