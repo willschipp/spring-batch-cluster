@@ -1,3 +1,12 @@
 Spring Batch Cluster - High Availability
 
 here's a small project to distribute and manage Spring Batch in a cluster environment
+
+Components
+
+- RemoteJobLauncher
+- RemoteJobRegistry
+- BatchHAService
+- HeartBeatConsumerService
+- HeartBeatProducerService
+
