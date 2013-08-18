@@ -14,6 +14,7 @@ import org.apache.tools.ant.taskdefs.Java;
 import org.apache.tools.ant.types.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
@@ -30,7 +31,7 @@ import org.springframework.mock.jndi.SimpleNamingContextBuilder;
 import de.incompleteco.spring.heartbeat.HeartBeatConsumerService;
 
 //don't run this test in CI
-//@Ignore
+@Ignore
 public class TestSimpleBatchHAService {
 
 	

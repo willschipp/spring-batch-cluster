@@ -36,7 +36,7 @@ import org.springframework.mock.jndi.SimpleNamingContextBuilder;
 import de.incompleteco.spring.heartbeat.HeartBeatConsumerService;
 
 //don't run this test in CI
-//@Ignore
+@Ignore
 public class TestScenariosSimpleBatchHAService {
 
 	
