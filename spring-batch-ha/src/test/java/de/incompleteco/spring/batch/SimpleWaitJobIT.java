@@ -23,8 +23,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @DirtiesContext
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration({"classpath:/META-INF/spring/batch-resource-context.xml",
-	"classpath:/META-INF/spring/job-context.xml"})
+@ContextConfiguration({"classpath:/META-INF/spring/common/batch-resource-context.xml",
+	"classpath:/META-INF/spring/job/job-context.xml"})
 @ActiveProfiles("local")
 public class SimpleWaitJobIT {
 

@@ -26,4 +26,9 @@ public class JobExecutionRegisterListener implements JobExecutionListener {
 		register.deregisterExecution(jobExecution.getId());
 	}
 
+	public void setRegister(BatchExecutionRegister register) {
+		this.register = register;
+	}
+
+	
 }

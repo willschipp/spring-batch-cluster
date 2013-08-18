@@ -12,7 +12,9 @@ import org.springframework.batch.core.configuration.JobFactory;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.job.SimpleJob;
 import org.springframework.batch.core.launch.NoSuchJobException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 
 import de.incompleteco.spring.batch.domain.JobEntity;
 import de.incompleteco.spring.batch.domain.JobEntityRepository;
@@ -22,7 +24,7 @@ import de.incompleteco.spring.batch.domain.JobEntityRepository;
  * @author wschipp
  *
  */
-public class RemoteJobRegistry implements JobRegistry {
+public class RemoteJobRegistry implements JobRegistry, InitializingBean  {
 	
 	private static final Logger logger = LoggerFactory.getLogger(RemoteJobRegistry.class);
 
@@ -34,6 +36,7 @@ public class RemoteJobRegistry implements JobRegistry {
 	public RemoteJobRegistry(JobRegistry localJobRegistry) {
 		this.localJobRegistry = localJobRegistry;
 	}
+	
 	
 	@Override
 	public Collection<String> getJobNames() {
@@ -92,4 +95,16 @@ public class RemoteJobRegistry implements JobRegistry {
 		localJobRegistry.unregister(jobName);
 	}
 
+
+	public void setJobEntityRepository(JobEntityRepository jobEntityRepository) {
+		this.jobEntityRepository = jobEntityRepository;
+	}
+
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		Assert.notNull(jobEntityRepository,"JobEntityRepository must be set");
+	}
+
+	
 }

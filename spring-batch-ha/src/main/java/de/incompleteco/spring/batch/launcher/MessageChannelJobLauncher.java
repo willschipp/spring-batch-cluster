@@ -44,6 +44,10 @@ public class MessageChannelJobLauncher implements JobLauncher {
 		//await response
 		Message<?> reply = replyChannel.receive(timeout);
 		logger.debug("after receiving timeout",reply);
+		//fail
+		if (reply == null) {
+			throw new IllegalArgumentException("no response received");
+		}//end if
 		//convert
 		if (reply.getPayload() instanceof JobExecution) {
 			return (JobExecution) reply.getPayload();

@@ -111,5 +111,29 @@ public class SimpleBatchHAService implements BatchHAService {
 			throw new IllegalArgumentException("failure to restart " + jobName,e);
 		}
 	}
+
+	public void setTimeout(long timeout) {
+		this.timeout = timeout;
+	}
+
+	public void setJobExplorer(JobExplorer jobExplorer) {
+		this.jobExplorer = jobExplorer;
+	}
+
+	public void setJobLocator(JobLocator jobLocator) {
+		this.jobLocator = jobLocator;
+	}
+
+	public void setJobLauncher(JobLauncher jobLauncher) {
+		this.jobLauncher = jobLauncher;
+	}
+
+	public void setJobRepository(JobRepository jobRepository) {
+		this.jobRepository = jobRepository;
+	}
+
+	public void setBatchExecutionState(BatchExecutionState batchExecutionState) {
+		this.batchExecutionState = batchExecutionState;
+	}
 	
 }
