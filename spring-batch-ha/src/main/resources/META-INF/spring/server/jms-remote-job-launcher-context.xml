@@ -38,5 +38,13 @@
 		<property name="gateway" ref="gateway"/>
 		<property name="replyChannel" ref="job.start.in.channel"/>
 	</bean>
+	
+	<bean id="jobOperator"
+		class="org.springframework.batch.core.launch.support.SimpleJobOperator">
+		<property name="jobExplorer" ref="jobExplorer"/>
+		<property name="jobLauncher" ref="remoteJobLauncher"/>
+		<property name="jobRegistry" ref="remoteJobRegistry"/>
+		<property name="jobRepository" ref="jobRepository"/>	
+	</bean>	
 
 </beans>

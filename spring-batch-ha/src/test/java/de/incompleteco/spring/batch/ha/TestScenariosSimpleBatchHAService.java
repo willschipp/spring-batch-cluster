@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Properties;
 
 import javax.sql.DataSource;
 
@@ -22,12 +23,17 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.converter.DefaultJobParametersConverter;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.support.PropertiesConverter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.jndi.SimpleNamingContextBuilder;
+
+import de.incompleteco.spring.heartbeat.HeartBeatConsumerService;
 
 //don't run this test in CI
 //@Ignore
@@ -94,19 +100,26 @@ public class TestScenariosSimpleBatchHAService {
 		new Thread(new RemoteJVMRunner()).start();
 		//now start the 'server'
 		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:/META-INF/spring/server-context.xml");
+		//check that it's started
+		HeartBeatConsumerService heartBeatConsumerService  = context.getBean(HeartBeatConsumerService.class);
+		while (!heartBeatConsumerService.started()) {
+			Thread.sleep(1000);//wait 1 second for everything to start up
+		}//end if		
 		//now that it's started, run the job
-		Job job = context.getBean(Job.class);
 		JobParameters parameters = new JobParametersBuilder().addLong("runtime",System.currentTimeMillis())
 				.addString("fail", "true").toJobParameters();
-		JobLauncher launcher = context.getBean("remoteJobLauncher", JobLauncher.class);
-		JobExecution execution = launcher.run(job,parameters);
+		JobOperator jobOperator = context.getBean(JobOperator.class);
+		Properties properties = new DefaultJobParametersConverter().getProperties(parameters);
+		properties.setProperty("runtime", Long.toString(System.currentTimeMillis()));
+		Long executionId = jobOperator.start("simpleWaitJob", PropertiesConverter.propertiesToString(properties));
 		JobExplorer explorer = context.getBean(JobExplorer.class);
+		JobExecution execution = explorer.getJobExecution(executionId);
 		//monitor
-		while (explorer.getJobExecution(execution.getId()).isRunning()) {
+		while (explorer.getJobExecution(executionId).isRunning()) {
 			Thread.sleep(500);
 		}//end while
 		//reload the execution
-		execution = explorer.getJobExecution(execution.getId());
+		execution = explorer.getJobExecution(executionId);
 		//check
 		assertTrue(execution.getStatus().isUnsuccessful());
 		//give 1 second to see if the other has been executed
@@ -115,7 +128,6 @@ public class TestScenariosSimpleBatchHAService {
 		List<JobExecution> executions = explorer.getJobExecutions(execution.getJobInstance());
 		assertNotNull(executions);
 		assertTrue(executions.size() == 2);//should be 2 attempts
-		Long executionId = null;
 		//get the second and monitor
 		for (JobExecution jobExecution : executions) {
 			if (jobExecution.getId() != execution.getId()) {

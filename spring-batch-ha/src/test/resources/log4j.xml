@@ -12,6 +12,10 @@
 	<category name="org.springframework.integration">
 		<priority value="debug"/>
 	</category>
+
+	<category name="de.incompleteco.spring.batch">
+		<priority value="debug"/>
+	</category>
 	
 	<category name="org.springframework.batch">
 		<priority value="debug"/>

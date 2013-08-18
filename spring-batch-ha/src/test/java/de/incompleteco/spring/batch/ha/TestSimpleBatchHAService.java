@@ -3,6 +3,7 @@ package de.incompleteco.spring.batch.ha;
 import static org.junit.Assert.assertFalse;
 
 import java.io.PrintStream;
+import java.util.Properties;
 
 import javax.sql.DataSource;
 
@@ -14,13 +15,13 @@ import org.apache.tools.ant.types.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.converter.DefaultJobParametersConverter;
 import org.springframework.batch.core.explore.JobExplorer;
-import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.support.PropertiesConverter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -99,18 +100,19 @@ public class TestSimpleBatchHAService {
 			Thread.sleep(1000);//wait 1 second for everything to start up
 		}//end if
 		//now that it's started, run the job
-		JobRegistry jobRegistry = context.getBean("remoteJobRegistry",JobRegistry.class);
-		Job job = jobRegistry.getJob("simpleWaitJob");
 		JobParameters parameters = new JobParametersBuilder().addLong("runtime",System.currentTimeMillis()).toJobParameters();
-		JobLauncher launcher = context.getBean("remoteJobLauncher", JobLauncher.class);
-		JobExecution execution = launcher.run(job,parameters);
+		JobOperator jobOperator = context.getBean(JobOperator.class);
+		Properties properties = new DefaultJobParametersConverter().getProperties(parameters);
+		properties.setProperty("runtime", Long.toString(System.currentTimeMillis()));
+		Long executionId = jobOperator.start("simpleWaitJob", PropertiesConverter.propertiesToString(properties));
 		JobExplorer explorer = context.getBean(JobExplorer.class);
+		JobExecution execution = explorer.getJobExecution(executionId);
 		//monitor
-		while (explorer.getJobExecution(execution.getId()).isRunning()) {
+		while (explorer.getJobExecution(executionId).isRunning()) {
 			Thread.sleep(500);
 		}//end while
 		//reload the execution
-		execution = explorer.getJobExecution(execution.getId());
+		execution = explorer.getJobExecution(executionId);
 		//check
 		assertFalse(execution.getStatus().isUnsuccessful());
 	}

@@ -51,7 +51,9 @@ public class RemoteJobRegistry implements JobRegistry {
 	public Job getJob(String name) throws NoSuchJobException {
 		//check if exists locally
 		try {
-			return localJobRegistry.getJob(name);
+			Job job = localJobRegistry.getJob(name);
+			logger.debug("retrieved from local JobRegistry");
+			return job;
 		} 
 		catch (NoSuchJobException e) {
 			//check if the name exists
@@ -62,6 +64,7 @@ public class RemoteJobRegistry implements JobRegistry {
 			//build a 'fake' job
 			SimpleJob job = new SimpleJob(entity.getName());
 			job.setJobParametersIncrementer(entity.getIncrementer());
+			logger.debug("retrieved from remote JobRegistry");
 			//return
 			return job;			
 		}

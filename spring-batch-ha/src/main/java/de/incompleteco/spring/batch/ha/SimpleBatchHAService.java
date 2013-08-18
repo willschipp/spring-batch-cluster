@@ -44,6 +44,7 @@ public class SimpleBatchHAService implements BatchHAService {
 	private JobLocator jobLocator;
 	
 	@Autowired
+	@Qualifier("remoteJobLauncher")//remote version to launch
 	private JobLauncher jobLauncher;
 	
 	@Autowired
