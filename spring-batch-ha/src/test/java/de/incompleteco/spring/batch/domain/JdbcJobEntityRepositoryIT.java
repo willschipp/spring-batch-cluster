@@ -2,7 +2,6 @@ package de.incompleteco.spring.batch.domain;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import javax.sql.DataSource;
 
@@ -10,6 +9,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
@@ -46,6 +46,8 @@ public class JdbcJobEntityRepositoryIT {
 	public void testSave() {
 		JobEntity jobEntity = new JobEntity();
 		jobEntity.setName("test_job");
+		//set the incrementer
+		jobEntity.setIncrementer(new RunIdIncrementer());
 		jobEntityRepository.save(jobEntity);
 		//check the count
 		assertTrue(jdbcTemplate.queryForObject("select count(*) from batch_job_entity",Integer.class) == 1); 

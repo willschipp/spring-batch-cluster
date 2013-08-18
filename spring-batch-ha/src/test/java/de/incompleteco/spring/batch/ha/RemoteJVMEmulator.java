@@ -14,7 +14,7 @@ public class RemoteJVMEmulator {
 	public static void setupJNDI() throws Exception {
 		SimpleNamingContextBuilder.emptyActivatedContextBuilder();
 		//bind AMQ
-		InfrastructureUtils.bindLocalAMQ("ConnectionFactory","request.queue","reply.queue");
+		InfrastructureUtils.bindLocalAMQ("ConnectionFactory","batch.request.queue","batch.reply.queue");
 		//bind h2
 		InfrastructureUtils.bindLocalH2("DataSource");
 	}

@@ -4,7 +4,7 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 	<import resource="classpath:/META-INF/spring/batch-resource-context.xml"/>
-	<import resource="classpath:/META-INF/spring/job-context.xml"/>
+<!-- 	<import resource="classpath:/META-INF/spring/job-context.xml"/> -->
 	<import resource="classpath:/META-INF/spring/jms-resource-context.xml"/>
 
 	<import resource="classpath:/META-INF/spring/server/*-context.xml"/>

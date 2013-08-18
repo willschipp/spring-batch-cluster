@@ -2,6 +2,8 @@ package de.incompleteco.spring.batch.domain;
 
 import java.io.Serializable;
 
+import org.springframework.batch.core.JobParametersIncrementer;
+
 /**
  * simple object to record a job name with a version
  * 
@@ -17,6 +19,8 @@ public class JobEntity implements Serializable {
 	private Integer version = 0;
 	
 	private String name;
+	
+	private JobParametersIncrementer incrementer;
 
 	public Long getId() {
 		return id;
@@ -40,6 +44,14 @@ public class JobEntity implements Serializable {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+	
+	public JobParametersIncrementer getIncrementer() {
+		return incrementer;
+	}
+
+	public void setIncrementer(JobParametersIncrementer incrementer) {
+		this.incrementer = incrementer;
 	}
 
 	@Override

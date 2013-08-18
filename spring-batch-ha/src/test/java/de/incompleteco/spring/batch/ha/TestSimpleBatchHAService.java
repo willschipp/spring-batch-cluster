@@ -13,12 +13,12 @@ import org.apache.tools.ant.taskdefs.Java;
 import org.apache.tools.ant.types.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.ApplicationContext;
@@ -27,7 +27,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.jndi.SimpleNamingContextBuilder;
 
 //don't run this test in CI
-@Ignore
+//@Ignore
 public class TestSimpleBatchHAService {
 
 	
@@ -43,7 +43,7 @@ public class TestSimpleBatchHAService {
 		//start amq
 		InfrastructureUtils.startAMQ();
 		//bind
-		InfrastructureUtils.bindLocalAMQ("ConnectionFactory","request.queue","reply.queue");
+		InfrastructureUtils.bindLocalAMQ("ConnectionFactory","batch.request.queue","batch.reply.queue");
 	}
 	
 	@AfterClass
@@ -88,10 +88,13 @@ public class TestSimpleBatchHAService {
 	public void testExecute() throws Exception {
 		//start a thread to run the remote
 		new Thread(new RemoteJVMRunner()).start();
+		//need to check if the remote server is up -- how?
 		//now start the 'server'
 		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:/META-INF/spring/server-context.xml");
 		//now that it's started, run the job
-		Job job = context.getBean(Job.class);
+//		Job job = context.getBean(Job.class);
+		JobRegistry jobRegistry = context.getBean("remoteJobRegistry",JobRegistry.class);
+		Job job = jobRegistry.getJob("simpleWaitJob");
 		JobParameters parameters = new JobParametersBuilder().addLong("runtime",System.currentTimeMillis()).toJobParameters();
 		JobLauncher launcher = context.getBean("remoteJobLauncher", JobLauncher.class);
 		JobExecution execution = launcher.run(job,parameters);

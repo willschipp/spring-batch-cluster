@@ -50,17 +50,21 @@ public class RemoteJobRegistry implements JobRegistry {
 	@Override
 	public Job getJob(String name) throws NoSuchJobException {
 		//check if exists locally
-		if (localJobRegistry.getJob(name) != null) {
+		try {
 			return localJobRegistry.getJob(name);
-		}//end if
-		//check if the name exists
-		if (jobEntityRepository.findByName(name) == null) {
-			throw new NoSuchJobException("job doesn't exist " + name);
-		}//end if
-		//build a 'fake' job
-		Job job = new SimpleJob(name);
-		//return
-		return job;
+		} 
+		catch (NoSuchJobException e) {
+			//check if the name exists
+			JobEntity entity = jobEntityRepository.findByName(name);
+			if (entity == null) {
+				throw new NoSuchJobException("job doesn't exist " + name);
+			}//end if
+			//build a 'fake' job
+			SimpleJob job = new SimpleJob(entity.getName());
+			job.setJobParametersIncrementer(entity.getIncrementer());
+			//return
+			return job;			
+		}
 	}
 
 
@@ -69,6 +73,8 @@ public class RemoteJobRegistry implements JobRegistry {
 		//build an entity
 		JobEntity entity = new JobEntity();
 		entity.setName(jobFactory.getJobName());
+		//get the incrementer
+		entity.setIncrementer(jobFactory.createJob().getJobParametersIncrementer());
 		//save
 		jobEntityRepository.save(entity);
 		//register it 'locally'
