@@ -7,10 +7,12 @@
 	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:util="http://www.springframework.org/schema/util"
 	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event"
 	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
 		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
 		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event-2.2.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
@@ -33,6 +35,16 @@
 	<int:service-activator input-channel="internal.trigger.channel" 
 		output-channel="heartbeat.out.channel"
 		expression="@heartbeatClientService.getIds()"/>
+
+	<int-event:inbound-channel-adapter
+		channel="internal.startup.channel"
+		event-types="org.springframework.context.event.ContextRefreshedEvent"/>
+	
+	<int:channel id="internal.startup.channel"/>
+	
+	<int:transformer input-channel="internal.startup.channel"
+		output-channel="heartbeat.out.channel"
+		expression="T(java.util.Collections).emptyList()"/>
 
 	<int:inbound-channel-adapter id="heartbeatAdapter" channel="heartbeat.out.channel"
 		ref="heartbeatClientService" method="getIds">
