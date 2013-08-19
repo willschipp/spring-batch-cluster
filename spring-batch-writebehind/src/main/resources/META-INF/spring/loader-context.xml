@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-event="http://www.springframework.org/schema/integration/event"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/event http://www.springframework.org/schema/integration/event/spring-integration-event.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<int-event:inbound-channel-adapter channel="startup.event.channel"
+		event-types="org.springframework.context.event.ContextRefreshedEvent"/>
+ 
+	<int:channel id="startup.event.channel"/>
+	
+	<int:chain input-channel="startup.event.channel">
+		<!-- load the instances from the database -->
+		<!-- get the job names -->
+		<int:service-activator ref="jdbcJobExplorer" method="getJobNames"/>
+		<!-- split -->
+		<int:splitter/>
+		<!-- load the instances for the name -->
+		<int:service-activator expression="@jdbcJobExplorer.getJobInstances(payload,0,T(java.lang.Integer).MAX_VALUE"/>
+		<!-- split again -->
+		<int:splitter/>
+		<!-- load the executions -->
+		<int:service-activator expression="@jdbcJobExplorer.getJobExecutions(payload)"/>
+		<!-- save each one into the map -->
+		<int:splitter/>
+			
+	</int:chain>
+	
+	
+
+	<bean id="jdbcJobRepository"
+		class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+		<property name="transactionManager" ref="dataSourceTransactionManager"/>
+	</bean>
+	<bean id="jdbcJobExplorer"
+		class="org.springframework.batch.core.explore.support.JobExplorerFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+</beans>
