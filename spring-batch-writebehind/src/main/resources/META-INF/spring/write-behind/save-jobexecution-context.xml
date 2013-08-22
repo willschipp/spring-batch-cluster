@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd">
+
+	<int:channel id="execution.created.channel">
+		<int:dispatcher task-executor="writeBehindTaskExecutor" />
+	</int:channel>
+	
+	<int:chain input-channel="execution.created.channel">
+		<int:transformer expression="@copyUtils.copyExecution(payload)"/>
+		<int:recipient-list-router>
+			<int:recipient channel="instance.create.channel" />
+			<int:recipient channel="execution.create.channel" />
+			<int:recipient channel="parameters.create.channel"/>
+			<!-- save the execution context -->
+			<int:recipient channel="executioncontext.create.channel"/>
+		</int:recipient-list-router>
+	</int:chain>
+
+	<int:channel id="instance.create.channel" />
+
+	<int-jdbc:outbound-channel-adapter
+		channel="instance.create.channel" data-source="dataSource" query="${jobInstance.insert}"
+		sql-parameter-source-factory="jobInstanceCreateSpelSqlFactory"
+		keys-generated="false" />
+
+	<int:channel id="execution.create.channel" />
+
+	<int-jdbc:outbound-channel-adapter
+		channel="execution.create.channel" data-source="dataSource"
+		query="${jobExecution.insert}" sql-parameter-source-factory="jobExecutionInsertSpelSqlFactory"
+		keys-generated="false"/>
+		
+	<int:channel id="parameters.create.channel"/>
+	
+	<int:chain input-channel="parameters.create.channel">
+		<int:header-enricher>
+			<int:header name="jobExecutionId" expression="payload.getId()"/>
+		</int:header-enricher>
+		<!-- split based on parameters -->
+		<int:splitter expression="payload.getJobParameters().getParameters().entrySet()"/>
+		<int-jdbc:outbound-channel-adapter
+			data-source="dataSource"
+			query="${jobParameters.insert}" sql-parameter-source-factory="jobParametersInsertSpelSqlFactory"
+			keys-generated="false"/>
+	</int:chain>
+	
+	<!-- :job_execution_id, :key_name, :type_cd, :string_val, :date_val, :long_val, :double_val, :identifying		 -->
+	<bean id="jobParametersInsertSpelSqlFactory"
+		class="org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory">
+		<property name="parameterExpressions">
+			<map>
+				<entry key="job_execution_id" value="headers['jobExecutionId']" />
+				<entry key="key_name" value="payload.getKey()" />
+				<entry key="type_cd" value="payload.getValue().getType().toString()" />
+				<entry key="string_val" value="payload.getValue().getType() == T(org.springframework.batch.core.JobParameter$ParameterType).STRING ? payload.getValue().getValue() : null" />
+				<entry key="date_val" value="payload.getValue().getType() == T(org.springframework.batch.core.JobParameter$ParameterType).DATE ? payload.getValue().getValue() : null" />
+				<entry key="long_val" value="payload.getValue().getType() == T(org.springframework.batch.core.JobParameter$ParameterType).LONG ? payload.getValue().getValue() : null" />
+				<entry key="double_val" value="payload.getValue().getType() == T(org.springframework.batch.core.JobParameter$ParameterType).DOUBLE ? payload.getValue().getValue() : null" />
+				<entry key="identifying" value="payload.getValue().isIdentifying() ? 'Y' : 'N'"/>
+			</map>
+		</property>
+	</bean>	
+	
+		
+	<!-- :job_instance_id, :job_name, :job_key, :version -->
+
+	<bean id="jobInstanceCreateSpelSqlFactory"
+		class="org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory">
+		<property name="parameterExpressions">
+			<map>
+				<entry key="job_instance_id" value="payload.getJobInstance().getId()" />
+				<entry key="job_name" value="payload.getJobInstance().getJobName()" />
+				<entry key="job_key"
+					value="@jobKeyGenerator.generateKey(payload.getJobParameters())" />
+				<entry key="version" value="payload.getJobInstance().getVersion()" />
+			</map>
+		</property>
+	</bean>
+
+
+	<!-- :job_execution_id, :job_instance_id, :start_time, :end_time, :status, 
+		:exit_code, :exit_message, :version, :create_time, :last_updated -->
+
+	<bean id="jobExecutionInsertSpelSqlFactory"
+		class="org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory">
+		<property name="parameterExpressions">
+			<map>
+				<entry key="job_execution_id" value="payload.getId()" />
+				<entry key="job_instance_id" value="payload.getJobInstance().getId()" />
+				<entry key="start_time" value="payload.getStartTime()" />
+				<entry key="end_time" value="payload.getEndTime()" />
+				<entry key="status" value="payload.getStatus().toString()" />
+				<entry key="exit_code" value="payload.getExitStatus().getExitCode()" />
+				<entry key="exit_message" value="payload.getExitStatus().getExitDescription()" />
+				<entry key="version" value="payload.getVersion()" />
+				<entry key="create_time" value="payload.getCreateTime()" />
+				<entry key="last_updated" value="payload.getLastUpdated()" />
+			</map>
+		</property>
+	</bean>		
+
+</beans>

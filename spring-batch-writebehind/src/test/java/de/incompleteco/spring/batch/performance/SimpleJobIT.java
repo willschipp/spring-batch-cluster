@@ -87,6 +87,8 @@ public class SimpleJobIT {
 					//check
 					assertEquals(jdbcTemplate.queryForObject("select status from batch_job_execution where job_execution_id = " + jobExecution.getId(), String.class).toUpperCase(),jobExecution.getStatus().name().toUpperCase());
 					assertTrue(databaseVersion == jobExecution.getVersion());
+					//check the job parameters
+					assertEquals(jdbcTemplate.queryForObject("select long_val from BATCH_JOB_EXECUTION_PARAMS where job_execution_id = " + jobExecution.getId(), Long.class),jobExecution.getJobParameters().getLong("runtime"));
 					//set
 					passed = true;
 				}//end for

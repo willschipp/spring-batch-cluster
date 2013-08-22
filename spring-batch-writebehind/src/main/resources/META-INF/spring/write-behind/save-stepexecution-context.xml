@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd">
+
+	<int:channel id="stepexecution.created.channel">
+		<int:dispatcher task-executor="writeBehindTaskExecutor" />
+	</int:channel>
+
+	<int:recipient-list-router input-channel="stepexecution.created.channel">
+		<int:recipient channel="stepexecution.create.channel"/>
+		<int:recipient channel="executioncontext.create.channel"/>
+	</int:recipient-list-router>
+	
+	<int:channel id="stepexecution.create.channel"/>
+
+	<int:chain input-channel="stepexecution.create.channel">
+		<int:transformer expression="@copyUtils.copyExecution(payload)"/>
+		<int-jdbc:outbound-channel-adapter
+			data-source="dataSource"
+			query="${stepExecution.insert}" 
+			sql-parameter-source-factory="stepExecutionInsertSpelSqlFactory"
+			keys-generated="false" />
+	</int:chain>
+
+	<!-- :step_execution_id, :version, :step_name, :job_execution_id, :start_time, 
+		:end_time, :status, :commit_count, :read_count, :filter_count, :write_count, 
+		:exit_code, :exit_message, :read_skip_count, :write_skip_count, :process_skip_count, 
+		:rollback_count, :last_updated -->
+
+	<bean id="stepExecutionInsertSpelSqlFactory"
+		class="org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory">
+		<property name="parameterExpressions">
+			<map>
+				<entry key="step_execution_id" value="payload.getId()" />
+				<entry key="version" value="payload.getVersion()" />
+				<entry key="step_name" value="payload.getStepName()" />
+				<entry key="job_execution_id" value="payload.getJobExecution().getId()" />
+				<entry key="start_time" value="payload.getStartTime()" />
+				<entry key="end_time" value="payload.getEndTime()" />
+				<entry key="status" value="payload.getStatus().toString()" />
+				<entry key="commit_count" value="payload.getCommitCount()" />
+				<entry key="read_count" value="payload.getReadCount()" />
+				<entry key="filter_count" value="payload.getFilterCount()" />
+				<entry key="write_count" value="payload.getWriteCount()" />
+				<entry key="exit_code" value="payload.getExitStatus().getExitCode()" />
+				<entry key="exit_message" value="payload.getExitStatus().getExitDescription()" />
+				<entry key="read_skip_count" value="payload.getReadSkipCount()" />
+				<entry key="write_skip_count" value="payload.getWriteSkipCount()" />
+				<entry key="process_skip_count" value="payload.getProcessSkipCount()" />
+				<entry key="rollback_count" value="payload.getRollbackCount()" />
+				<entry key="last_updated" value="payload.getLastUpdated()" />
+			</map>
+		</property>
+	</bean>
+
+</beans>

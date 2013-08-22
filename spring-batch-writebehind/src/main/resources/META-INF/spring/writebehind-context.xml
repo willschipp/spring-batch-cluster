@@ -13,6 +13,9 @@
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
+	<import resource="classpath:/META-INF/spring/write-behind/save-jobexecution-context.xml"/>
+	<import resource="classpath:/META-INF/spring/write-behind/save-stepexecution-context.xml"/>
+
 	<context:property-placeholder
 		location="classpath:/META-INF/sql/sql.statement.properties" />
 
@@ -24,6 +27,7 @@
 		<int:method pattern="createJobExecution" channel="execution.created.channel" payload="#return" />
 		<int:method pattern="update" channel="execution.updated.channel" payload="#args[0]"/>
 		<int:method pattern="add" channel="stepexecution.created.channel"  payload="#args[0]"/>
+		<int:method pattern="updateExecutionContext" channel="executioncontext.updated.channel"  payload="#args[0]"/>
 	</int:publishing-interceptor>
 
 	<int:channel id="execution.updated.channel">
@@ -43,7 +47,6 @@
 
 	<int:channel id="jobexecution.updated.channel" />
 
-
 	<int-jdbc:outbound-channel-adapter
 		channel="jobexecution.updated.channel" data-source="dataSource"
 		query="${jobExecution.update}" sql-parameter-source-factory="jobExecutionUpdateSpelSqlFactory" />
@@ -52,50 +55,39 @@
 		<int:dispatcher task-executor="writeBehindTaskExecutor"/>
 	</int:channel>
 
-		<int-jdbc:outbound-channel-adapter
-			channel="stepexecution.updated.channel"
-			data-source="dataSource"
-			query="${stepExecution.update}" 
-			sql-parameter-source-factory="stepExecutionUpdateSpelSqlFactory"
-			keys-generated="false" />		
-
-	<int:channel id="execution.created.channel">
-		<int:dispatcher task-executor="writeBehindTaskExecutor" />
-	</int:channel>
+	<int-jdbc:outbound-channel-adapter
+		channel="stepexecution.updated.channel"
+		data-source="dataSource"
+		query="${stepExecution.update}" 
+		sql-parameter-source-factory="stepExecutionUpdateSpelSqlFactory"
+		keys-generated="false" />		
+		
+	<int:channel id="executioncontext.create.channel"/>
 	
-	<int:chain input-channel="execution.created.channel">
-		<int:transformer expression="@copyUtils.copyExecution(payload)"/>
-		<int:recipient-list-router>
-			<int:recipient channel="instance.create.channel" />
-			<int:recipient channel="execution.create.channel" />
-		</int:recipient-list-router>
+	<!-- process the execution -->
+	<int:chain input-channel="executioncontext.create.channel">
+		<int:header-enricher>
+			<!-- id -->
+			<int:header name="executionId" expression="payload.getId()"/>
+			<!-- sql -->
+			<int:header name="sql" expression="payload instanceof T(org.springframework.batch.core.JobExecution) ? '${jobExecutionContext.insert}' : '${stepExecutionContext.insert}'"/>
+		</int:header-enricher>
+		<int:transformer expression="@serializationService.serialize(payload.getExecutionContext())"/>
+		<int:service-activator expression="@serializationService.persistBlob(payload,headers['executionId'],headers['sql'])"/>
 	</int:chain>
 
-	<int:channel id="instance.create.channel" />
+	<int:channel id="executioncontext.updated.channel"/>
 
-	<int-jdbc:outbound-channel-adapter
-		channel="instance.create.channel" data-source="dataSource" query="${jobInstance.insert}"
-		sql-parameter-source-factory="jobInstanceCreateSpelSqlFactory"
-		keys-generated="false" />
-
-	<int:channel id="execution.create.channel" />
-
-	<int-jdbc:outbound-channel-adapter
-		channel="execution.create.channel" data-source="dataSource"
-		query="${jobExecution.insert}" sql-parameter-source-factory="jobExecutionInsertSpelSqlFactory"
-		keys-generated="false"/>
-
-	<int:channel id="stepexecution.created.channel">
-		<int:dispatcher task-executor="writeBehindTaskExecutor" />
-	</int:channel>
-
-	<int:chain input-channel="stepexecution.created.channel">
-		<int:transformer expression="@copyUtils.copyExecution(payload)"/>
-		<int-jdbc:outbound-channel-adapter
-			data-source="dataSource"
-			query="${stepExecution.insert}" 
-			sql-parameter-source-factory="stepExecutionInsertSpelSqlFactory"
-			keys-generated="false" />
+	<int:chain input-channel="executioncontext.updated.channel">
+		<!-- update the header values -->
+		<int:header-enricher>
+			<int:header name="executionId" expression="payload.getId()"/>
+			<int:header name="sql" expression="payload instanceof T(org.springframework.batch.core.JobExecution) ? '${jobExecutionContext.update}' : '${stepExecutionContext.update}'"/>
+		</int:header-enricher>
+		<!-- serialize -->
+		<int:transformer expression="@serializationService.serialize(payload.getExecutionContext())"/>
+		<!-- save -->
+		<int:service-activator expression="@serializationService.persistBlob(payload,headers['executionId'],headers['sql'])"/>
 	</int:chain>
 
 
@@ -154,73 +146,9 @@
 
 
 
-	<!-- :step_execution_id, :version, :step_name, :job_execution_id, :start_time, 
-		:end_time, :status, :commit_count, :read_count, :filter_count, :write_count, 
-		:exit_code, :exit_message, :read_skip_count, :write_skip_count, :process_skip_count, 
-		:rollback_count, :last_updated -->
-
-	<bean id="stepExecutionInsertSpelSqlFactory"
-		class="org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory">
-		<property name="parameterExpressions">
-			<map>
-				<entry key="step_execution_id" value="payload.getId()" />
-				<entry key="version" value="payload.getVersion()" />
-				<entry key="step_name" value="payload.getStepName()" />
-				<entry key="job_execution_id" value="payload.getJobExecution().getId()" />
-				<entry key="start_time" value="payload.getStartTime()" />
-				<entry key="end_time" value="payload.getEndTime()" />
-				<entry key="status" value="payload.getStatus().toString()" />
-				<entry key="commit_count" value="payload.getCommitCount()" />
-				<entry key="read_count" value="payload.getReadCount()" />
-				<entry key="filter_count" value="payload.getFilterCount()" />
-				<entry key="write_count" value="payload.getWriteCount()" />
-				<entry key="exit_code" value="payload.getExitStatus().getExitCode()" />
-				<entry key="exit_message" value="payload.getExitStatus().getExitDescription()" />
-				<entry key="read_skip_count" value="payload.getReadSkipCount()" />
-				<entry key="write_skip_count" value="payload.getWriteSkipCount()" />
-				<entry key="process_skip_count" value="payload.getProcessSkipCount()" />
-				<entry key="rollback_count" value="payload.getRollbackCount()" />
-				<entry key="last_updated" value="payload.getLastUpdated()" />
-			</map>
-		</property>
-	</bean>
-
-	<!-- :job_instance_id, :job_name, :job_key, :version -->
-
-	<bean id="jobInstanceCreateSpelSqlFactory"
-		class="org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory">
-		<property name="parameterExpressions">
-			<map>
-				<entry key="job_instance_id" value="payload.getJobInstance().getId()" />
-				<entry key="job_name" value="payload.getJobInstance().getJobName()" />
-				<entry key="job_key"
-					value="@jobKeyGenerator.generateKey(payload.getJobParameters())" />
-				<entry key="version" value="payload.getJobInstance().getVersion()" />
-			</map>
-		</property>
-	</bean>
 
 
-	<!-- :job_execution_id, :job_instance_id, :start_time, :end_time, :status, 
-		:exit_code, :exit_message, :version, :create_time, :last_updated -->
 
-	<bean id="jobExecutionInsertSpelSqlFactory"
-		class="org.springframework.integration.jdbc.ExpressionEvaluatingSqlParameterSourceFactory">
-		<property name="parameterExpressions">
-			<map>
-				<entry key="job_execution_id" value="payload.getId()" />
-				<entry key="job_instance_id" value="payload.getJobInstance().getId()" />
-				<entry key="start_time" value="payload.getStartTime()" />
-				<entry key="end_time" value="payload.getEndTime()" />
-				<entry key="status" value="payload.getStatus().toString()" />
-				<entry key="exit_code" value="payload.getExitStatus().getExitCode()" />
-				<entry key="exit_message" value="payload.getExitStatus().getExitDescription()" />
-				<entry key="version" value="payload.getVersion()" />
-				<entry key="create_time" value="payload.getCreateTime()" />
-				<entry key="last_updated" value="payload.getLastUpdated()" />
-			</map>
-		</property>
-	</bean>
 
 	<bean id="jobKeyGenerator" class="org.springframework.batch.core.DefaultJobKeyGenerator" />
 
@@ -230,6 +158,10 @@
 	</bean>
 	
 	<bean id="copyUtils" class="de.incompleteco.spring.batch.map.CopyUtils"/>
+
+	<bean id="serializationService" class="de.incompleteco.spring.batch.map.SerializationService">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
 
 	<beans profile="local">
 
