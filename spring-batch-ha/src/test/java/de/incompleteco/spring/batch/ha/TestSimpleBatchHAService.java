@@ -94,7 +94,7 @@ public class TestSimpleBatchHAService {
 		new Thread(new RemoteJVMRunner()).start();
 		//need to check if the remote server is up -- how?
 		//now start the 'server'
-		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:/META-INF/spring/server-context.xml");
+		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:/META-INF/spring/server/server-context.xml");
 		//check that it's started
 		HeartBeatConsumerService heartBeatConsumerService  = context.getBean(HeartBeatConsumerService.class);
 		while (!heartBeatConsumerService.started()) {
@@ -146,7 +146,7 @@ public class TestSimpleBatchHAService {
 			java.setClassname(RemoteJVMEmulator.class.getName());
 			java.setClasspath(new Path(project,System.getProperty("java.class.path")));
 			//create arguments
-			java.createArg().setValue("classpath:/META-INF/spring/client-context.xml");
+			java.createArg().setValue("classpath:/META-INF/spring/client/client-context.xml");
 			//init
 			java.init();
 			//execute

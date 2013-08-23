@@ -6,7 +6,7 @@
       <param name="ConversionPattern" value="%d %-5p [%t] %C{2} (%F:%L) - %m%n"/>
     </layout>
   </appender>
-  <category name="org.springframework.integration">
+  <category name="org.springframework.integration.channel">
     <priority value="debug" />
   </category>
   <root>
