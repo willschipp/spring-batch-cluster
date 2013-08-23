@@ -8,33 +8,43 @@
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 	<int-event:inbound-channel-adapter channel="startup.event.channel"
-		event-types="org.springframework.context.event.ContextRefreshedEvent"/>
+		event-types="org.springframework.context.event.ContextRefreshedEvent"
+		error-channel="event.error.channel"/>
  
 	<int:channel id="startup.event.channel"/>
 	
-	<int:chain input-channel="startup.event.channel">
+	<int:chain input-channel="startup.event.channel" output-channel="event.error.channel">
 		<!-- load the instances from the database -->
 		<!-- get the job names -->
 		<int:service-activator ref="jdbcJobExplorer" method="getJobNames"/>
+		<!-- evaluate -->
+		<int:filter expression="payload.isEmpty() != true"/>
 		<!-- split -->
-		<int:splitter/>
+		<int:splitter requires-reply="true"/>
 		<!-- load the instances for the name -->
-		<int:service-activator expression="@jdbcJobExplorer.getJobInstances(payload,0,T(java.lang.Integer).MAX_VALUE"/>
+		<int:service-activator expression="@jdbcJobExplorer.getJobInstances(payload,0,T(java.lang.Integer).MAX_VALUE)"/>
 		<!-- split again -->
-		<int:splitter/>
+		<int:splitter requires-reply="true"/>
 		<!-- load the executions -->
 		<int:service-activator expression="@jdbcJobExplorer.getJobExecutions(payload)"/>
 		<!-- save each one into the map -->
-		<int:splitter/>
-			
+		<int:splitter requires-reply="true"/>
+		<!-- save -->
+		<int:service-activator ref="mapJobRepositoryLoader"/>
 	</int:chain>
 	
+	<int:channel id="event.error.channel"/>
 	
-
+	<int:logging-channel-adapter channel="event.error.channel" log-full-message="true" level="ERROR"/>
+	
+	<bean id="mapJobRepositoryLoader" class="de.incompleteco.spring.batch.map.MapJobRepositoryLoader">
+		<property name="jobRepositoryFactoryBean" ref="&amp;jobRepository"/>
+	</bean>
+	
 	<bean id="jdbcJobRepository"
 		class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean">
 		<property name="dataSource" ref="dataSource"/>
-		<property name="transactionManager" ref="dataSourceTransactionManager"/>
+		<property name="transactionManager" ref="datasourceTransactionManager"/>
 	</bean>
 	<bean id="jdbcJobExplorer"
 		class="org.springframework.batch.core.explore.support.JobExplorerFactoryBean">

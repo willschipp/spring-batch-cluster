@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
-	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
 	xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:task="http://www.springframework.org/schema/task"
-	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xsi:schemaLocation="http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
 		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
 		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
@@ -144,12 +148,6 @@
 		</property>
 	</bean>
 
-
-
-
-
-
-
 	<bean id="jobKeyGenerator" class="org.springframework.batch.core.DefaultJobKeyGenerator" />
 
 	<bean id="datasourceTransactionManager"
@@ -162,6 +160,19 @@
 	<bean id="serializationService" class="de.incompleteco.spring.batch.map.SerializationService">
 		<property name="dataSource" ref="dataSource"/>
 	</bean>
+	
+	<bean id="databaseType" class="java.lang.String">
+		<constructor-arg value="H2" />
+	</bean>	
+
+	<jee:jndi-lookup id="dataSource" jndi-name="jdbc/DataSource" expected-type="javax.sql.DataSource"/>
+	
+<!-- 	<beans profile="default"> -->
+		<!-- load the properties -->
+<!-- 		<context:property-placeholder location="classpath:/META-INF/properties/database.properties"/> -->
+		<!-- task executor -->
+		<task:executor id="writeBehindTaskExecutor" />
+<!-- 	</beans> -->
 
 	<beans profile="local">
 
@@ -172,8 +183,7 @@
 		</bean>
 
 		<jdbc:embedded-database id="dataSource" type="H2">
-			<jdbc:script
-				location="classpath:/org/springframework/batch/core/schema-h2.sql" />
+			<jdbc:script location="classpath:/org/springframework/batch/core/schema-h2.sql" />
 		</jdbc:embedded-database>
 	</beans>
 

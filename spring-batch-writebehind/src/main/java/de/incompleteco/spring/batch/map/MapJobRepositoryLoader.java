@@ -15,6 +15,7 @@ import org.springframework.batch.core.repository.dao.MapJobExecutionDao;
 import org.springframework.batch.core.repository.dao.MapJobInstanceDao;
 import org.springframework.batch.core.repository.dao.MapStepExecutionDao;
 import org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean;
+import org.springframework.integration.annotation.ServiceActivator;
 
 public class MapJobRepositoryLoader {
 	
@@ -22,6 +23,7 @@ public class MapJobRepositoryLoader {
 	
 	private JobKeyGenerator<JobParameters> jobKeyGenerator = new DefaultJobKeyGenerator();
 	
+	@ServiceActivator
 	public void loadExecution(JobExecution jobExecution) throws Exception {
 		//load up the following daos
 		//jobInstanceDao

@@ -1,29 +1,16 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
-
-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
-  <appender name="console" class="org.apache.log4j.ConsoleAppender"> 
-    <param name="Target" value="System.out"/> 
-    <layout class="org.apache.log4j.PatternLayout"> 
-      <param name="ConversionPattern" value="%-5p %c{1} [%t] - %m%n"/> 
-    </layout> 
-  </appender> 
-
-	<category name="org.springframework.integration.channel">
-		<priority value="debug"/>
-	</category>
-
-<!-- 	<category name="de.incompleteco.spring.batch"> -->
-<!-- 		<priority value="debug"/> -->
-<!-- 	</category> -->
-	
-	<category name="org.springframework.batch">
-		<priority value="debug"/>
-	</category>
-
-  <root> 
-    <priority value ="severe" /> 
-    <appender-ref ref="console" /> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN" "log4j.dtd">
+<log4j:configuration xmlns:log4j='http://jakarta.apache.org/log4j/'>
+  <appender name="STDOUT" class="org.apache.log4j.ConsoleAppender">
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%d %-5p [%t] %C{2} (%F:%L) - %m%n"/>
+    </layout>
+  </appender>
+  <category name="org.springframework.integration">
+    <priority value="debug" />
+  </category>
+  <root>
+    <priority value ="error" />
+    <appender-ref ref="STDOUT" />
   </root>
-  
 </log4j:configuration>
