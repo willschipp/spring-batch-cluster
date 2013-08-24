@@ -8,14 +8,66 @@
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 	<int-http:inbound-gateway 
+		id="appStatusGateway"
 		request-channel="status.channel"
 		path="/status"
 		supported-methods="GET"/>
 	 
 	<int:channel id="status.channel"/>
 	
-	<int:service-activator input-channel="status.channel" expression="'hello'"/>
-
+	<int:chain input-channel="status.channel">
+		<int:service-activator expression="@statusService.started()"/>
+		<int:object-to-json-transformer/>
+	</int:chain>
+	
+	
+	<int-http:inbound-gateway
+		id="jobNamesGateway"
+		request-channel="job.names.channel"
+		path="/jobs"
+		supported-methods="GET"/>
+		
+	<int:channel id="job.names.channel"/>
+	
+	<int:chain input-channel="job.names.channel">
+		<int:service-activator expression="@remoteJobRegistry.getJobNames()"/>
+		<int:object-to-json-transformer/>
+	</int:chain>
+	
+	<!-- expecting a json payload of jobName:"name", parameters[key:"value",key:"value"] -->
+	
+	<int-http:inbound-gateway
+		id="jobStartGateway"
+		request-channel="job.channel"
+		path="/job"
+		supported-methods="POST,GET"
+		request-payload-type="java.lang.String"/>
+		
+	<int:channel id="job.channel"/>
+	
+	<int:header-value-router input-channel="job.channel" 
+		header-name="#{T(org.springframework.integration.http.HttpHeaders).REQUEST_METHOD}">
+		<int:mapping value="GET" channel="job.status.channel"/>
+		<int:mapping value="POST" channel="job.start.channel"/>
+	</int:header-value-router>	
+		
+	<int:channel id="job.start.channel"/>
+	
+	<int:chain input-channel="job.start.channel">
+		<int:json-to-object-transformer type="de.incompleteco.spring.batch.domain.JobStartRequest"/>
+		<int:service-activator expression="@jobOperator.start(payload.getJobName(),payload.getKeyValuePair())"/>
+		<int:object-to-json-transformer/>
+	</int:chain>
+	
+	<int:channel id="job.status.channel"/>
+	
+	<int:chain input-channel="job.status.channel">
+		<int:transformer expression="payload['jobId']"/>
+		<int:service-activator expression="@jobExplorer.getJobExecution(payload)"/>
+		<int:transformer expression="payload.getStatus().toString()"/>
+		<int:object-to-json-transformer/>
+	</int:chain>
+	
 	<bean class="org.springframework.integration.http.inbound.UriPathHandlerMapping"/>
 
 </beans>

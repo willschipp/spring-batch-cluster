@@ -7,6 +7,8 @@
 	
 	<import resource="classpath*:/META-INF/spring/server/server-context.xml"/>
 
+	<import resource="classpath:/META-INF/spring/job/*-context.xml"/>
+
 	<bean id="statusService" class="de.incompleteco.spring.batch.service.SimpleStatusService"/>
 
 </beans>
